@@ -1,0 +1,93 @@
+﻿Date Collected,Animal Species,Animal ID,Village ,Location,Sub-counties,County,Contact Details,BarCode,Rapid Diagnostic Test ,Lab Diagnostics (PCR),Test Location,Sequence Status
+16/08/2021,Canine,SIA/CAN/002,Kwoyo,Imbo East,,Siaya,,Z00861875,Negative,Negative,Nairobi,Sequenced
+16/08/2021,Canine,SIA/CAN/003,Lela,Imbo East,,Siaya,,Z00861876,Negative,Negative,Nairobi,Sequenced
+11/08/2021,Canine,SIA/CAN/001,Boro,Central Alego,,Siaya,,Z00861877,Positive,Positive,Nairobi,Sequenced
+20/08/2021,Bovine,SIA/BOV/001,Uriri,Imbo West,,Siaya,,Z00861873,Positive,Positive,Nairobi,Sequenced
+30/08/2021,Canine,SIA/CAN/004,Nyabondo,Imbo West,,Siaya,,Z00861874,Positive,Positive,Nairobi,Sequenced
+02/09/2021,Bovine,SIA/BOV/003,Mireri,Siaya Township,,Siaya,,Z00861871,Positive,,,
+01/10/2021,Bovine,SIA/BOV/005,Garra,West Uyoma,,Siaya,,Z00861862,Positive,,,
+05/10/2021,Bovine,SIA/BOV/006,Nyawara,West Uyoma,,Siaya,,Z00861861,Positive,,,
+15/10/2021,Bovine,SIA/BOV/007,Achage,Siaya Township,,Siaya,,Z00861858,Positive,,,
+17/10/2021,Bovine,SIA/BOV/009,Ginga,West Uyoma,,Siaya,,Z00861857,Positive,,,
+18/10/2021,Bovine,SIA/BOV/010,Arongo,West Uyoma,,Siaya,,Z00861856,Positive,,,
+11/11/2021,Bovine,SIA/BOV/011,Alara,Central Sakwa,,Siaya,,Z00861847,Positive,Positive,Nairobi,Sequenced
+31/08/2021,Bovine,SIA/BOV/002,Boro,Central Alego,,Siaya,,Z00861872,Positive,Positive,Nairobi,Sequenced
+05/09/2021,Canine,SIA/CAN/005,Komolo,Imbo East,,Siaya,,Z00861867,Positive,Positive,Nairobi,Sequenced
+05/09/2021,Canine,SIA/CAN/006,Komolo,Imbo East,,Siaya,,Z00861868,Positive,Negative,Nairobi,Sequenced
+05/09/2021,Canine,SIA/CAN/007,Komolo,Imbo East,,Siaya,,Z00861869 ,Positive,Positive,Nairobi,Sequenced
+05/09/2021,Canine,SIA/CAN/008,Rae,Siaya Township,,Siaya,,Z00861870 ,Positive,Positive,Nairobi,Sequenced
+11/09/2021,Canine,SIA/CAN/009,Nyamonye,Imbo East,,Siaya,,Z00861865,Positive,Positive,Nairobi,Sequenced
+21/09/2021,Canine,SIA/CAN/010,Pala,West Uyoma,,Siaya,,Z00861864,Positive,,,
+26/09/2021,Canine,SIA/CAN/011,Sigor,West Asembo,,Siaya,,Z00861863,Positive,,,
+12/10/2021,Canine,SIA/CAN/012,Kanyagero,Imbo West,,Siaya,,Z00861860,Positive,,,
+14/10/2021,Canine,SIA/CAN/013,Lwak,West Asembo,,Siaya,,Z00861859,Positive,,,
+03/11/2021,Canine,SIA/CAN/016,Nyangera,Imbo West,,Siaya,,Z00861850,Positive,,,
+03/11/2021,Canine,SIA/CAN/017,Nyamonye,Imbo East,,Siaya,,Z00861851,Positive,,,
+04/11/2021,Canine,SIA/CAN/018,Nyangera,Imbo West,,Siaya,,Z00861853,Positive,,,
+06/11/2021,Canine,SIA/CAN/019,Atemo,West Asembo,,Siaya,,Z00861852,Positive,,,
+10/09/2021,Bovine,,Akom,West Asembo,,Siaya,,Z00861866,Positive,Positive,Nairobi,Sequenced
+26/10/2021,Canine,,Nyangera,Imbo East,,Siaya,,Z00861855,Positive,,,
+28/10/2021,Canine,,Nyamonye,Imbo East,,Siaya,,Z00861854,Positive,,,
+23/11/2021,Ovine,,Lwak,West Asembo,,Siaya,,Z00861846,Positive,Negative,Nairobi,Sequenced
+25/11/2021,Canine,,Atemo,West Asembo,,Siaya,,Z00861845,Positive,Positive,Nairobi,Sequenced
+02/12/2021,Bovine,,Odera Amoth,West Uyoma,,Siaya,,Z00861844,Positive,Positive,Nairobi,Sequenced
+10/12/2021,Canine,,,West Yimbo,,Siaya,,,Positive,,,
+17/12/2021,Canine,,,North  sakwa,,Siaya,,,Positive,,,
+22/12/2021,Canine,,,Yimbo East,,Siaya,,,Positive,,,
+09/12/2021,Canine,,Kosinjo,Township,,Siaya,722768578,Z00861843,Positive,Positive,Nairobi,Sequenced
+22/12/2021,Canine,,Pala,Yimbo East,,Siaya,728162183,Z00861842,Positive,Positive,Nairobi,Sequenced
+20/12/2021,Canine,,Randago,South East Alego,,Siaya,720047985,Z00861841,Positive,Positive,Nairobi,Sequenced
+01/01/2022,Canine,,,West Asembo,Rarieda,Siaya,,,Positive,,,
+14/01/2022,Canine,,,Nyangera,Bondo,Siaya,716281650,Z00861838,Positive,Positive,Nairobi,Sequenced
+18/01/2022,Canine,,Lela,Yimbo East,Bondo,Siaya,725895479,Z00861837,Positive,Positive,Nairobi,Sequenced
+31/01/2022,Canine,,Nyamonye,Yimbo East,Bondo,Siaya,,Z00861836,Positive,Positive,Nairobi,Sequenced
+05/02/2022,Canine,,Pala,Yimbo East,Bondo,Siaya,,Z00861835,Positive,Negative,Nairobi,Sequenced
+10/02/2022,Bovine,,Kochieng A,Central Alego,Alego usonga,Siaya,,Z00861833,Positive,,,
+10/02/2022,Canine,,Apate,West Alego,Alego usonga,Siaya,,Z00861834,Positive,Positive,Nairobi,Sequenced
+13/02/2022,Canine,,Karapul,Siaya Township,Alego usonga,Siaya,,Z00861832,Positive,Positive,Nairobi,Sequenced
+17/02/2022,Bovine,,Kogelo,Central Alego,Alego usonga,Siaya,,Z00861831,Positive,Positive,Nairobi,Sequenced
+20/02/2022,Bovine,,Lela,Yimbo East,Bondo,Siaya,,Z00861830,Positive,,,
+26/02/2022,Canine,,Sianga,Central Sakwa,Bondo,Siaya,,Z00861829,Positive,Positive,Nairobi,Sequenced
+03/03/2022,Canine,,Ramba,East Asembo,Rarieda,Siaya,,Z00861827,Positive,Positive,Nairobi,Sequenced
+06/03/2022,Canine,,Maranda,West Sakwa,Bondo,Siaya,,Z00861826,Positive,Positive,Nairobi,Sequenced
+13/03/2022,Canine,,Nyamninia,Yala,Gem,Siaya,,Z00861826,Positive,Positive,Nairobi,Sequenced
+18/03/2022,Canine,,Lela,Yimbo East,Bondo,Siaya,,Z00861824,Positive,Positive,Nairobi,Sequenced
+18/03/2022,Canine,,Apate,West Alego,Alego usonga,Siaya,,Z00861825,Positive,,,
+20/03/2022,Canine,,Kokwiri,West Uyoma,Rarieda,Siaya,,Z00861823,Positive,Positive,Nairobi,Sequenced
+23/03/2022,Canine,,Pap Okoyo,Central Alego,Alego usonga,Siaya,,Z00861822,Positive,,,
+29/03/2022,Canine,,Obambo,Central Alego,Alego usonga,Siaya,,Z00861821,Negative,,,
+01/04/2022,Canine,,Nyawara,West Uyoma,Rarieda,Siaya,,Z00861820,Positive,Positive,Nairobi,Sequenced
+02/04/2022,Canine,,Kadhai,Central Alego,Alego usonga,Siaya,,Z00861819,Positive,,,
+13/04/2022,Canine,,Okela,East Uyoma,Rarieda,Siaya,,Z00861818,Positive,,,
+20/04/2022,Bovine,,Soweto,North Gem,Gem,Siaya,,Z00861817,Positive,,,
+27/04/2022,Canine,,Apate,Central Alego,Alego usonga,Siaya,,Z00861816,Positive,Positive,Nairobi,Sequenced
+28/04/2022,Canine,,,,,Siaya,,,Negative,,,
+01/05/2022,Canine,,Hawinga,West Alego,Alego usonga,Siaya,,Z00861815,Positive,Positive,Nairobi,Sequenced
+09/05/2022,Canine,,Okenye,East Asembo,Rarieda,Siaya,,Z00861814,Positive,Positive,Nairobi,Sequenced
+10/05/2022,Bovine,,Bar Kayango,Yimbo East,Bondo,Siaya,,Z00861813,Positive,,,
+18/05/2022,Bovine,,Ndiwa,Yimbo East,Bondo,Siaya,,Z00861812,Positive,,,
+23/05/2022,Canine,,Mahinga,Siaya Township,Alego usonga,Siaya,,Z00861811,Positive,Positive,Nairobi,Sequenced
+25/05/2022,Canine,,Mainga,Siaya Township,Alego usonga,Siaya,,Z00861810,Positive,Positive,Nairobi,Sequenced
+28/05/2022,Bovine,,Sigomre,Sigomre,Ugunja,Siaya,,Z00861809,Positive,Positive,Nairobi,Sequenced
+03/06/2022,Canine,,Hawuoto,Ugunja,Ugunja,Siaya,,Z00861808,Positive,Positive,Nairobi,Sequenced
+09/06/2022,Canine,,Chianda,North Uyoma,Rarieda,Siaya,,Z00861807,Positive,Positive,Nairobi,Sequenced
+16/06/2022,Canine,,Wambosa,South Gem,Gem,Siaya,,Z00861806,Positive,Positive,Nairobi,Sequenced
+21/06/2022,Bovine,,Nyamonye,Yimbo East,Bondo,Siaya,,Z00861801,Positive,,,
+22/06/2022,Canine,,Tuju,West Uyoma,Rarieda,Siaya,,Z00861802,Positive,,,
+22/06/2022,Bovine,,Boro,Central Alego,Alego usonga,Siaya,,Z00861803,Positive,,,
+26/06/2022,Canine,,Mutumbu,North Gem,Gem,Siaya,,Z00865560,Positive,Positive,Nairobi,Sequenced
+27/06/2022,Canine,,Lwak,West Asembo,Rarieda,Siaya,,Z00865561,Positive,Positive,Nairobi,Sequenced
+29/06/2022,Canine,,Miseru,South Gem,Gem,Siaya,,Z00865562,Positive,Positive,Nairobi,Sequenced
+12/07/2022,Canine,,Ralien,East Asembo,Rarieda,Siaya,,Z00865563,Positive,Positive,Nairobi,Sequenced
+13/07/2022,Canine,,Lwak,West Asembo,Rarieda,Siaya,714061659,Z00865564,Positive,Positive,Nairobi,Sequenced
+14/07/2022,Canine,,Lwak,West Asembo,Rarieda,Siaya,707755736,Z00865566,Positive,Positive,Nairobi,Sequenced
+19/07/2022,Canine,,Lwak,West Asembo,Rarieda,Siaya,707772944,Z00865567,Negative,,,
+20/07/2022,Canine,,Bar Olengo,South East Alego,Alego usonga,Siaya,769338182,Z00865568,Negative,,,
+21/07/2022,Canine,,Haga,South East Alego,Alego usonga,Siaya,799632367,Z00865570,Positive,Positive,Nairobi,Sequenced
+23/07/2022,Canine,,Ndori,East Asembo,Rarieda,Siaya,704435923,Z00865571,Positive,Positive,Nairobi,Sequenced
+29/07/2022,Canine,,Omboye,West Asembo,Rarieda,Siaya,722315786,Z00865572,Negative,,,
+03/08/2022,Canine,,Haga,South East Alego,Alego usonga,Siaya,799632367,Z00865574,Positive,,,
+20/08/2022,Canine,,Gundarut,West Sakwa,Bondo,Siaya,729422149,Z00865569,Negative,,,
+25/08/2022,Canine,,Nyainita,West Sakwa,Bondo,Siaya,720487325,Z00865575,Negative,,,
+29/08/2022,Bovine,,Wambisa,West Uyoma,Rarieda,Siaya,795979017,Z00865576,Positive,,,
+30/08/2022,Human,,Alara,South West Sakwa,Bondo,Siaya,70731283,2021153276,Positive,Positive,Nairobi,Sequenced
