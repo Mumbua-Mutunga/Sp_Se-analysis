@@ -48,20 +48,22 @@ pacman::p_load(
 
 data <- read_xlsx("Se_Sp.xlsx", sheet = "Sheet1") |>
   clean_names() |>
-  select(-c(comments, species_collective)) 
+  dplyr::select(-c(comments, species_collective)) 
+data[20,] #' _Were there really 90 RDT+ves from samples without a species in 2022?! (these are not among the other 30 dog ones etc) :_ 
 
 contact_traced <- read.csv("animal_samples.csv") 
 
 contact_traced_clean <- contact_traced |>
-  rename_at(vars(starts_with("form.")), funs(str_remove(.,"form."))) |>
-  select(-c(formid, completed_time, started_time,username,received_on, form_link,hq_user, number)) |>
+  dplyr::rename_at(vars(starts_with("form.")), funs(str_remove(.,"form."))) |> #' _I GET AN ERROR HERE - any idea how to solve:_ 
+  ## Error in funs(str_remove(., "form.")) : could not find function "funs"
+  dplyr::select(-c(formid, completed_time, started_time,username,received_on, form_link,hq_user, number)) |>
   mutate(species = as.factor(species)) |>
   mutate(cnty_name = recode(cnty_name,
                             "mkn_cnty" = "Makueni",
                             "sia_cnty" = "Siaya")) |>
   mutate(sample_collection_dt = dmy(sample_collection_dt)) |>
   mutate(species = revalue(species, c("1"="Dog", "2"="Cat", "3"= "Goat", "4"="Donkey", "5"="Cattle", "6"="Sheep", "7" = "Wild_animal"))) 
-  
+
 
 siaya_sq <- read.csv("siaya_sequenced.csv") |>
   clean_names()
