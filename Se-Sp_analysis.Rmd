@@ -28,7 +28,6 @@ pacman::p_load(
   flextable,
   readxl,
   forcats,
-  tidyverse,
   epiR,
   plyr, 
   epitools,
@@ -36,118 +35,34 @@ pacman::p_load(
   marginaleffects,
   ggpubr,
   psych,
-  tinytex
+  tinytex,
+  tidyverse
 )
 
 ```
 
 
 ```{r, include=FALSE}
+# Loading the datasets that we need
 
-#loading the datasets
+con_table<- import(here::here("data","clean", "con_table.rds")) #for making the confusion matrix
+ct_data <- import(here::here("data", "clean", "ct_data.rds")) # for analysis
+ct_data_ <- import(here::here("data", "clean", "ct_data_.rds"))
+ct_plot_dt <- import(here::here("data", "clean", "ct_plot_dt.rds"))
 
-data <- read_xlsx("Se_Sp.xlsx", sheet = "Sheet1") |>
-  clean_names() |>
-  dplyr::select(-c(comments, species_collective)) 
-data[20,] #' _Were there really 90 RDT+ves from samples without a species in 2022?! (these are not among the other 30 dog ones etc) :_ 
-
-contact_traced <- read.csv("animal_samples.csv") 
-
-contact_traced_clean <- contact_traced |>
-  dplyr::rename_at(vars(starts_with("form.")), funs(str_remove(.,"form."))) |> #' _I GET AN ERROR HERE - any idea how to solve:_ 
-  ## Error in funs(str_remove(., "form.")) : could not find function "funs"
-  dplyr::select(-c(formid, completed_time, started_time,username,received_on, form_link,hq_user, number)) |>
-  mutate(species = as.factor(species)) |>
-  mutate(cnty_name = recode(cnty_name,
-                            "mkn_cnty" = "Makueni",
-                            "sia_cnty" = "Siaya")) |>
-  mutate(sample_collection_dt = dmy(sample_collection_dt)) |>
-  mutate(species = revalue(species, c("1"="Dog", "2"="Cat", "3"= "Goat", "4"="Donkey", "5"="Cattle", "6"="Sheep", "7" = "Wild_animal"))) 
-
-
-siaya_sq <- read.csv("siaya_sequenced.csv") |>
-  clean_names()
-
-makueni_sq <- read.csv("makueni_sequenced.csv") |>
-  clean_names() |>
-  dplyr::rename(sub_counties = sub_county,
-               lab_diagnostics_pcr = lab_diagnostics )
-
-combined <- rbind(makueni_sq, siaya_sq) |>
-  mutate(date_collected = dmy(date_collected))
-
-ct_data <- left_join(contact_traced_clean, combined, by = c("sample_collection_dt" = "date_collected", "cnty_name" = "county")) |>
-  filter(!lab_diagnostics_pcr %in% NA) |>
-  mutate(clinical_signs_ = paste(if_known, other, sep = " ")) |>
-  separate_rows(clinical_signs_, sep = " ") |>
-  select(-if_known, -other) |>
-  filter(!clinical_signs_ %in% "---") |>
-  filter(!clinical_signs_ %in% "") |>
-  mutate(clinical_signs_ = recode(clinical_signs_,
-      "Abnormal_vocalisation." = "Abnormal_vocalization",
-      "abnormal_vocalization" = "Abnormal_vocalization",
-      "Anotexia" = "Anorexia",
-      "Anorexis" = "Anorexia",
-      "Biting_Animals" = "biting_objects",
-      "Biting_animals_and_dogs" ="biting_objects",
-      "Biting_other_dogs" = "biting_objects",
-      "The_Sheep_was_bitten_by_a_Stray_dog" = "Rabid_animal_bite",
-      "Was_bitten_by_her_rabid_mother" = "Rabid_animal_bite")) 
-  
-
-```
-
-```{r, include=FALSE}
-
-data_clean <- data |>
-  filter(!species %in% NA) |>
-  mutate(total_positive = rdt_positive+false_positive) |>
-  mutate(total_negative = rdt_negative+false_negative) 
-
-con_table <- data_clean |>
-  select(rdt_positive, false_positive, false_negative, rdt_negative) |>
-  mutate(True_positive = sum(rdt_positive, na.rm = T)) |>
-  mutate(False_positive = sum(false_positive, na.rm = T)) |>
-  mutate(True_negative = sum(rdt_negative, na.rm = T)) |>
-  mutate(False_negative = sum(false_negative, na.rm = T)) |>
-  select(True_positive,False_positive,True_negative,False_negative) |>
-  distinct()
 
 ```
 
 # Se, Sp, NPV, PPV
 ```{r warning=FALSE, echo=FALSE}
-  
-table1 <- as.table(matrix(c(90,6,14,2), nrow = 2, byrow = TRUE))
+
+table1 <- matrix(as.numeric(unlist(con_table)),nrow=nrow(con_table)) #converting the dataframe to matrix
+
 rval <- epi.tests(table1, conf.level = 0.95)
 print(rval)
 
 ```
 
-
-```{r, include=FALSE}
-
-ct_plot_dt <- ct_data |>
-   select(sample_collection_dt, species, cnty_name, clinical_signs_, lab_diagnostics_pcr, sample_source) |>
-  filter(!lab_diagnostics_pcr %in% "") |>
-  group_by(clinical_signs_, lab_diagnostics_pcr) %>% 
-  tally() %>% 
-  mutate(percentage = n / sum(n) * 100)
-
-ct_data_ <- ct_data |>
-  select(sample_collection_dt, species, cnty_name, clinical_signs_, lab_diagnostics_pcr, rapid_diagnostic_test, sample_source) |>
-  filter(!lab_diagnostics_pcr %in% "") |>
-  mutate(lab_diagnostics_pcr = recode(lab_diagnostics_pcr, 
-             "Positive" = "1",
-             "Negative" = "0")) |>
-  mutate(rapid_diagnostic_test = recode(rapid_diagnostic_test, 
-             "Positive" = "1",
-             "Negative" = "0")) |>
-  mutate(clinical_signs_ = as.factor(clinical_signs_)) |>
-  mutate(lab_diagnostics_pcr = as.factor(lab_diagnostics_pcr)) |>
-  mutate(rapid_diagnostic_test = as.factor(rapid_diagnostic_test)) 
-
-```
 
 # PCR +VE and -VE of the relevant variables
 
@@ -164,19 +79,6 @@ ggplot(ct_plot_dt, aes(clinical_signs_, percentage, fill = lab_diagnostics_pcr))
   labs(x = "clinical signs", y = "Percentage", fill = "PCR test")
 
 ```
-
-
-<!-- ```{r warning=FALSE, echo=FALSE, include=FALSE} -->
-
-<!-- model <- glm(lab_diagnostics_pcr ~ clinical_signs_ + species + factor(sample_source), family = "binomial", data = ct_data_) -->
-
-<!-- summary(model) -->
-
-<!-- hypotheses(model, hypothesis = 6) -->
-
-
-<!-- ``` -->
-
 
 
 ```{r warning=FALSE, echo=FALSE, include=FALSE}
@@ -341,9 +243,9 @@ my_table
 model_glm <- ct_data |>
    select(sample_collection_dt, species, cnty_name, sample_source, lab_diagnostics_pcr, rapid_diagnostic_test, clinical_signs_) |>
   filter(!lab_diagnostics_pcr %in% "") |>
-  group_by(clinical_signs_) |>
+  group_by(sample_collection_dt, species, cnty_name, sample_source, lab_diagnostics_pcr, rapid_diagnostic_test, clinical_signs_) |>
   count() |>
-  pivot_wider(names_from=clinical_signs_, values_from=freq) |>
+  pivot_wider(names_from=clinical_signs_, values_from=n) |>
   mutate_at(vars(aggressive:Abnormal_vocalization), ~replace(., is.na(.), 0)) |>
    mutate(lab_diagnostics_pcr = recode(lab_diagnostics_pcr, 
              "Positive" = "1",

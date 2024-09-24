@@ -1,0 +1,138 @@
+---
+title: "Data_cleaning"
+author: "Mumbua Mutunga"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r, include=FALSE}
+
+# Loading the packages
+
+pacman::p_load(
+  rio,
+  here,
+  sf,
+  janitor,
+  lubridate,
+  epikit,       
+  gtsummary,    
+  scales,       
+  flextable,
+  readxl,
+  forcats,
+  tidyverse,
+  epiR,
+  plyr, 
+  epitools,
+  geepack, 
+  marginaleffects,
+  ggpubr,
+  psych,
+  tinytex
+)
+
+```
+
+
+```{r, include=FALSE}
+
+#loading the datasets
+
+data <- read_xlsx("Se_Sp.xlsx", sheet = "Sheet1") |>
+  clean_names() |>
+  dplyr::select(-c(comments, species_collective))  
+
+contact_traced <- read.csv("animal_samples.csv") 
+
+contact_traced_clean <- contact_traced |>
+  dplyr::rename_at(vars(starts_with("form.")), funs(str_remove(.,"form."))) |> 
+  dplyr::select(-c(formid, completed_time, started_time,username,received_on, form_link,hq_user, number)) |>
+  mutate(species = as.factor(species)) |>
+  mutate(cnty_name = recode(cnty_name,
+                            "mkn_cnty" = "Makueni",
+                            "sia_cnty" = "Siaya")) |>
+  mutate(sample_collection_dt = dmy(sample_collection_dt)) |>
+  mutate(species = revalue(species, c("1"="Dog", "2"="Cat", "3"= "Goat", "4"="Donkey", "5"="Cattle", "6"="Sheep", "7" = "Wild_animal"))) 
+
+
+siaya_sq <- read.csv("siaya_sequenced.csv") |>
+  clean_names()
+
+makueni_sq <- read.csv("makueni_sequenced.csv") |>
+  clean_names() |>
+  dplyr::rename(sub_counties = sub_county,
+               lab_diagnostics_pcr = lab_diagnostics )
+
+combined <- rbind(makueni_sq, siaya_sq) |>
+  mutate(date_collected = dmy(date_collected))
+
+ct_data <- left_join(contact_traced_clean, combined, by = c("sample_collection_dt" = "date_collected", "cnty_name" = "county")) |>
+  filter(!lab_diagnostics_pcr %in% NA) |>
+  mutate(clinical_signs_ = paste(if_known, other, sep = " ")) |>
+  separate_rows(clinical_signs_, sep = " ") |>
+  select(-if_known, -other) |>
+  filter(!clinical_signs_ %in% "---") |>
+  filter(!clinical_signs_ %in% "") |>
+  mutate(clinical_signs_ = recode(clinical_signs_,
+      "Abnormal_vocalisation." = "Abnormal_vocalization",
+      "abnormal_vocalization" = "Abnormal_vocalization",
+      "Anotexia" = "Anorexia",
+      "Anorexis" = "Anorexia",
+      "Biting_Animals" = "biting_objects",
+      "Biting_animals_and_dogs" ="biting_objects",
+      "Biting_other_dogs" = "biting_objects",
+      "The_Sheep_was_bitten_by_a_Stray_dog" = "Rabid_animal_bite",
+      "Was_bitten_by_her_rabid_mother" = "Rabid_animal_bite")) 
+
+# exporting the ct_data
+
+rio::export(ct_data, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/ct_data.rds")
+  
+```
+
+```{r, include=FALSE}
+
+data_clean <- data |>
+  filter(!species %in% NA) |>
+  mutate(total_positive = rdt_positive+false_positive) |>
+  mutate(total_negative = rdt_negative+false_negative) 
+
+con_table <- data_clean |>
+  select(rdt_positive, false_positive, false_negative, rdt_negative) |>
+  mutate(True_positive = sum(rdt_positive, na.rm = T)) |>
+  mutate(False_positive = sum(false_positive, na.rm = T)) |>
+  mutate(True_negative = sum(rdt_negative, na.rm = T)) |>
+  mutate(False_negative = sum(false_negative, na.rm = T)) |>
+  select(True_positive,False_positive,False_negative, True_negative) |>
+  distinct()
+
+rio::export(con_table, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/con_table.rds")
+
+```
+
+```{r, include=FALSE}
+
+ct_plot_dt <- ct_data |>
+   select(sample_collection_dt, species, cnty_name, clinical_signs_, lab_diagnostics_pcr, sample_source) |>
+  filter(!lab_diagnostics_pcr %in% "") |>
+  group_by(clinical_signs_, lab_diagnostics_pcr) %>% 
+  tally() %>% 
+  mutate(percentage = n / sum(n) * 100)
+
+ct_data_ <- ct_data |>
+  select(sample_collection_dt, species, cnty_name, clinical_signs_, lab_diagnostics_pcr, rapid_diagnostic_test, sample_source) |>
+  filter(!lab_diagnostics_pcr %in% "") |>
+  mutate(lab_diagnostics_pcr = recode(lab_diagnostics_pcr, 
+             "Positive" = "1",
+             "Negative" = "0")) |>
+  mutate(rapid_diagnostic_test = recode(rapid_diagnostic_test, 
+             "Positive" = "1",
+             "Negative" = "0")) |>
+  mutate(clinical_signs_ = as.factor(clinical_signs_)) |>
+  mutate(lab_diagnostics_pcr = as.factor(lab_diagnostics_pcr)) |>
+  mutate(rapid_diagnostic_test = as.factor(rapid_diagnostic_test)) 
+
+rio::export(ct_data, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/ct_data_.rds")
+
+```
