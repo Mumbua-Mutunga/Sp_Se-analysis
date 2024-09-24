@@ -133,6 +133,8 @@ ct_data_ <- ct_data |>
   mutate(lab_diagnostics_pcr = as.factor(lab_diagnostics_pcr)) |>
   mutate(rapid_diagnostic_test = as.factor(rapid_diagnostic_test)) 
 
-rio::export(ct_data, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/ct_data_.rds")
+rio::export(ct_plot_dt, here::here("data", "clean", "ct_plot_dt.rds"))
+
+rio::export(ct_data_, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/ct_data_.rds")
 
 ```
