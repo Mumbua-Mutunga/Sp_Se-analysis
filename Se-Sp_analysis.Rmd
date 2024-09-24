@@ -3,9 +3,9 @@ title: "Se-Sp_analysis"
 author: "Mumbua Mutunga"
 date: "`r Sys.Date()`"
 output:
-  html_document: default
-  word_document: default
   pdf_document: default
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -110,8 +110,6 @@ table_2 <- ct_data |>
 
 
 ```
-
-
 
 
 ```{r, include=F}
