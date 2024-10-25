@@ -21,7 +21,6 @@ pacman::p_load(
   flextable,
   readxl,
   forcats,
-  tidyverse,
   epiR,
   plyr, 
   epitools,
@@ -29,7 +28,9 @@ pacman::p_load(
   marginaleffects,
   ggpubr,
   psych,
-  tinytex
+  tinytex,
+  data.table,
+  tidyverse
 )
 
 ```
@@ -88,6 +89,8 @@ ct_data <- left_join(contact_traced_clean, combined, by = c("sample_collection_d
 # exporting the ct_data
 
 rio::export(ct_data, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/ct_data.rds")
+
+rio::export(combined, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/combined.rds")
   
 ```
 
@@ -138,3 +141,29 @@ rio::export(ct_plot_dt, here::here("data", "clean", "ct_plot_dt.rds"))
 rio::export(ct_data_, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/ct_data_.rds")
 
 ```
+
+
+```{r}
+# Forest plot data
+
+data_forest <- ct_data |>
+  select(sample_collection_dt, species, cnty_name, sample_source,clinical_signs_, rapid_diagnostic_test,lab_diagnostics_pcr) |>
+  filter(!lab_diagnostics_pcr %in% "") |>
+  mutate(lab_diagnostics_pcr = recode(lab_diagnostics_pcr, 
+             "Positive" = "1",
+             "Negative" = "0")) |>
+  mutate(cnty_name = as.factor(cnty_name))|>
+  mutate(sample_source = as.factor(sample_source))|>
+  mutate(clinical_signs_ = as.factor(clinical_signs_))|>
+  mutate(lab_diagnostics_pcr = as.factor(lab_diagnostics_pcr))
+
+model <- glm(lab_diagnostics_pcr ~ species + cnty_name + sample_source + clinical_signs_,
+  family = "binomial",
+  data = data_forest
+)
+
+parameters::standardize_parameters(model, exponentiate = TRUE)
+  
+  
+```
+

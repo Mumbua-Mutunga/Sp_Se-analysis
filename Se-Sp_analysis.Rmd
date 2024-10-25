@@ -3,9 +3,9 @@ title: "Se-Sp_analysis"
 author: "Mumbua Mutunga"
 date: "`r Sys.Date()`"
 output:
-  pdf_document: default
-  word_document: default
   html_document: default
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -36,6 +36,10 @@ pacman::p_load(
   ggpubr,
   psych,
   tinytex,
+  forester,
+  effectsize,
+  RColorBrewer,
+  apyramid,
   tidyverse
 )
 
@@ -49,7 +53,12 @@ con_table<- import(here::here("data","clean", "con_table.rds")) #for making the 
 ct_data <- import(here::here("data", "clean", "ct_data.rds")) # for analysis
 ct_data_ <- import(here::here("data", "clean", "ct_data_.rds"))
 ct_plot_dt <- import(here::here("data", "clean", "ct_plot_dt.rds"))
+combined <- import(here::here("data", "clean", "combined.rds"))
 
+counties <- st_read(here::here("data","clean","gadm41_KEN_1.shp"))
+
+chosen <- counties |>
+  filter(NAME_1 %in% c("Makueni", "Siaya"))
 
 ```
 
@@ -203,8 +212,11 @@ corr_rdt_cs <- ggplot(test, aes(x = clinical_signs_, fill = test_result)) +
     fill = "RDT Result") +
   theme_minimal() +
   coord_flip()+
-  theme(text=element_text(size=20))
+  scale_fill_brewer(palette = "Set1", direction = -1)+
+  theme(text=element_text(size=15))
 
+ggsave("plot1.png", corr_rdt_cs)
+       
 #Correlation between Clinical Signs and PCR Test Result
 
 corr_pcr_cs <- ggplot(test, aes(x = clinical_signs_, fill = lab_diagnostics_pcr)) +
@@ -215,12 +227,19 @@ corr_pcr_cs <- ggplot(test, aes(x = clinical_signs_, fill = lab_diagnostics_pcr)
     fill = "PCR Result") +
   theme_minimal() +
   coord_flip()+
-  theme(text=element_text(size=20))
+  scale_fill_brewer(palette = "Set1", direction = -1)+
+  theme(text=element_text(size=15))
+
+ggsave("plot2.png", corr_pcr_cs)
 
 plot1 <-ggarrange(corr_rdt_cs, corr_pcr_cs,nrow = 1, labels = c("A", "B"),
   font.label = list(size = 20,color = "black", align ="hv"))
 
 plot1
+
+ggsave("plot1.png", plot1,
+        width = 23.5, height = 16, units = "cm", dpi = 600)
+ggsave("plot1.svg", plot1, device = "svg")
 ```
 
 # Table species vs the symptoms 
@@ -232,6 +251,8 @@ my_table <- flextable(table_2)|>
   bold(i = 5, bold = TRUE, part = "body")
 
 my_table
+
+save_as_docx(my_table, path = "my_table.docx")
 ```
 
 # GLM
@@ -242,7 +263,7 @@ model_glm <- ct_data |>
    select(sample_collection_dt, species, cnty_name, sample_source, lab_diagnostics_pcr, rapid_diagnostic_test, clinical_signs_) |>
   filter(!lab_diagnostics_pcr %in% "") |>
   group_by(sample_collection_dt, species, cnty_name, sample_source, lab_diagnostics_pcr, rapid_diagnostic_test, clinical_signs_) |>
-  count() |>
+  dplyr::count() |>
   pivot_wider(names_from=clinical_signs_, values_from=n) |>
   mutate_at(vars(aggressive:Abnormal_vocalization), ~replace(., is.na(.), 0)) |>
    mutate(lab_diagnostics_pcr = recode(lab_diagnostics_pcr, 
@@ -253,6 +274,14 @@ model_glm <- ct_data |>
 
 model1 <- glm(lab_diagnostics_pcr ~ aggressive , family = "binomial", data = model_glm)
 
+summary(model1)
+
+model_glm <- model_glm %>%
+  droplevels.data.frame() %>%
+  mutate(species2 = case_when(species %in% c("Goat", "Cattle", "Sheep") ~ "Ruminants", 
+                              TRUE ~ species))
+
+model1 <- glm(lab_diagnostics_pcr ~ aggressive*species2 , family = "binomial", data = model_glm)
 summary(model1)
 
 model2 <- glm(lab_diagnostics_pcr ~ biting_objects , family = "binomial", data = model_glm)
@@ -288,5 +317,203 @@ summary(interactive_model2)
 
 ```
 
+# Time series
+
+```{r warning=FALSE, echo=FALSE,}
+
+ts_plot <- combined |>
+  select(date_collected, county, rapid_diagnostic_test, lab_diagnostics_pcr) |>
+  mutate(rapid_diagnostic_test = recode(rapid_diagnostic_test, 
+             "Positive " = "Positive")) |>
+  filter(!rapid_diagnostic_test %in% "Inconclusive") |>
+  group_by(date_collected,county, rapid_diagnostic_test) |>
+  dplyr::count()|>
+  mutate(rapid_diagnostic_test = as.factor(rapid_diagnostic_test)) |>
+  mutate(n = as.numeric(n))
+
+  
+# ggplot(ts_plot, aes(x = date_collected, y = n, col = rapid_diagnostic_test)) +
+#   geom_line() +
+#   #geom_smooth()+
+#   scale_x_date(breaks = "3 weeks")+
+#   facet_grid(scales = "free")+
+#   facet_wrap(~county) +
+#   coord_flip()+
+#   ylim(0,4)
+#     
+# 
+# ggplot(ts_plot, aes(x=date_collected, y=n, fill = rapid_diagnostic_test))+
+#   geom_bar(stat = "identity")+
+#   scale_x_date(breaks = "month") +
+#   coord_flip()
+
+ggplot(ts_plot, aes(x=date_collected, fill =rapid_diagnostic_test ))+
+  geom_histogram(bins=30, colour="white")+
+  scale_y_continuous( breaks = seq(from =0, to=20, by=5), expand = c(0,0))+
+  scale_x_date(breaks = "month", expand = c(0,0)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5))+
+  labs(x= "Sample collection timelines", y = "Number of samples", fill = "RDT outcome")+
+  scale_fill_brewer(palette = "Set1", direction = 1)
+  #facet(by = "county")
+
+ggsave("plot3.png") 
+
+Fig <- ct_data |>
+  select(sample_collection_dt, species, cnty_name, clinical_signs_, lab_diagnostics_pcr, rapid_diagnostic_test, sample_source) |>
+  filter(!lab_diagnostics_pcr %in% "") |>
+  group_by(species, clinical_signs_) |>
+  dplyr::count()
+
+ggplot(data = Fig)+
+  geom_col(aes(y=n, x = clinical_signs_,fill = species), position = "dodge") +
+  labs(x = "Clinical signs", y = "Number", fill="Species")+
+  scale_fill_brewer(palette = "Set1")+
+  coord_flip()
+
+ggsave("plot4.png")
+  
+```
+
+
+
+# County plots
+
+```{r}
+
+ggplot()+
+  geom_sf(data=counties, aes(geometry=geometry), fill="white")+
+  geom_sf(data = chosen, aes(geometry=geometry),fill="orange")+
+  geom_sf_text(data = chosen, aes(label = NAME_1),size = 3)+
+  labs(x="Longitude",y="Latitude")+theme(text=element_text(size=15))
+
+ggsave("plot5.png")
+
+```
+
+# data with RDT & clinical signs
+```{r echo=FALSE}
+
+new_plan <- test |>
+  select(sample_collection_dt, species, clinical_signs_, lab_diagnostics_pcr, rapid_diagnostic_test, test_result) |>
+  group_by(species, clinical_signs_,test_result) |>
+  dplyr::count()
+
+TP <- new_plan |>
+  filter(test_result %in% "True_Positive")
+
+FP <- new_plan |>
+  filter(test_result %in% "False_Positive")
+
+TN <- new_plan |>
+  filter(test_result %in% "True_Negative")
+
+FN <- new_plan |>
+  filter(test_result %in% "False_Negative")
+
+Spectral<-colorRampPalette(brewer.pal(11,"Spectral") )(15)
+
+TP_plot <- ggplot(data = TP)+
+  geom_col(aes(x=forcats::fct_infreq(clinical_signs_, n), y=n, fill = clinical_signs_)) +
+  labs(x = "Clinical signs", y = "Number", fill="Clinical signs")+
+  scale_fill_manual(values =c("#48A0B2" ,"#3E77B5" ,"#5E4FA2", "#FEE899", "#543005", "#c51b7d" ,"#CCEA9D", "#fddbc7", "#6FC5A4", "#9E0142", "#C52C4B" ,"#E25249", "#F57647", "#FBA45C", "#FDCA78"))+
+  coord_flip()
+
+FP_plot <- ggplot(data = FP)+
+  geom_col(aes(x=forcats::fct_infreq(clinical_signs_, n), y=n, fill = clinical_signs_)) +
+  labs(x = "Clinical signs", y = "Number", fill="Clinical signs")+
+  scale_fill_manual(values =c("#48A0B2" ,"#3E77B5" ,"#5E4FA2", "#FEE899", "#543005", "#c51b7d" ,"#F57647"))+
+  coord_flip()
+
+
+TN_plot <- ggplot(data = TN)+
+  geom_col(aes(x=forcats::fct_infreq(clinical_signs_, n), y=n, fill = clinical_signs_)) +
+  labs(x = "Clinical signs", y = "Number", fill="Clinical signs")+
+  scale_fill_manual(values =c("#48A0B2" ,"#3E77B5" ,"#5E4FA2", "#543005", "#c51b7d" ,"#CCEA9D", "#fddbc7", "#6FC5A4", "#9E0142" , "#F57647", "#FBA45C"))+
+  coord_flip()
+
+FN_plot <- ggplot(data = FN)+
+  geom_col(aes(x=forcats::fct_infreq(clinical_signs_, n), y=n, fill = clinical_signs_)) +
+  labs(x = "Clinical signs", y = "Number", fill="Clinical signs")+
+  scale_fill_manual(values =c("#48A0B2" ,"#3E77B5" ,"#5E4FA2", "#FEE899", "#543005", "#c51b7d" ,"#F57647", "#fddbc7"))+
+  coord_flip()
+
+TP_plot
+FP_plot
+TN_plot
+FN_plot
+
+ggsave("TP_plot.png", TP_plot)
+ggsave("FP_plot.png", FP_plot)
+ggsave("TN_plot.png", TN_plot)
+ggsave("FN_plot.png", FN_plot)
+
+
+
+```
+
+
+# Pyramids
+
+```{r}
+
+sample_data <- test |>
+  select(clinical_signs_, test_result) |>
+  group_by(clinical_signs_,test_result) |>
+  dplyr::count() 
+  #dplyr::filter(test_result == "True_Positive" | test_result == "False_Positive") 
+
+sample_data <- as.data.frame(sample_data)
+
+mycolors <- c(brewer.pal(name="Dark2", n = 8), brewer.pal(name="Paired", n = 6))
+
+pr <- age_pyramid(sample_data,
+  age_group = clinical_signs_,
+  split_by = test_result,
+  stack_by = clinical_signs_,
+  count = n,
+  na.rm = TRUE,
+  show_midpoint = F,
+  vertical_lines = F,
+  horizontal_lines = F,
+  pyramid = T,
+  pal = mycolors
+)
+
+pr
+
+ggsave("pyramid.png", pr)
+
+ggplot(data=sample_data,aes(x=as.factor(n),fill=clinical_signs_)) + 
+  geom_bar(data=subset(sample_data,test_result=="True_Positive")) + 
+  geom_bar(data=subset(sample_data,test_result=="False_Positive"),aes(y=..count..*(-1))) + 
+  scale_fill_manual(values = mycolors) + 
+  coord_flip()
+
+# library(ggplot2)
+# library(lemon)
+# 
+# ggplot(data = sample_data, mapping = aes(x = ifelse(test = test_result == "False_Positive" , yes = -test_result, no = test_result), y = clinical_signs_, fill = clinical_signs_)) +
+#   geom_col() +
+#   scale_x_symmetric(labels = abs) +
+#   labs(x = "Population")
+
+```
+
+# simple figure
+
+```{r}
+sample_data$test_result <- factor(sample_data$test_result, levels = c("True_Positive", "False_Positive", "True_Negative",
+        "False_Negative"                                                              ))
+
+ggplot(data = sample_data)+
+  geom_col(aes(x=forcats::fct_infreq(clinical_signs_, n), y=n, fill = clinical_signs_), fill = "orange") +
+  labs(x = "Clinical signs", y = "Number", fill="Clinical signs")+
+  facet_grid(.~test_result) +
+  theme_bw()+
+  coord_flip()
+
+ggsave("plot6.png")
+
+```
 
 
