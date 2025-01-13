@@ -299,4 +299,8 @@ siaya_sd <-sample_data |>
   filter(cnty_name %in% "Siaya")
 
 siaya_sd <- st_as_sf(x = siaya_sd,                         
-           coords = c("Longitude", "Latitu
+           coords = c("Longitude", "Latitude"),
+           crs = projcrs)
+
+
+
