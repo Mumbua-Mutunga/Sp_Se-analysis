@@ -11,7 +11,7 @@
 
 <meta name="author" content="Mumbua Mutunga" />
 
-<meta name="date" content="2024-10-08" />
+<meta name="date" content="2024-12-11" />
 
 <title>Data_cleaning</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">Data_cleaning</h1>
 <h4 class="author">Mumbua Mutunga</h4>
-<h4 class="date">2024-10-08</h4>
+<h4 class="date">2024-12-11</h4>
 
 </div>
 
@@ -361,7 +361,85 @@ display: none;
 
 data_forest &lt;- ct_data |&gt;
   select(sample_collection_dt, species, cnty_name, sample_source,clinical_signs_, rapid_diagnostic_test,lab_diagnostics_pcr) |&gt;
-  group_by()</code></pre>
+  filter(!lab_diagnostics_pcr %in% &quot;&quot;) |&gt;
+  mutate(lab_diagnostics_pcr = recode(lab_diagnostics_pcr, 
+             &quot;Positive&quot; = &quot;1&quot;,
+             &quot;Negative&quot; = &quot;0&quot;)) |&gt;
+  mutate(cnty_name = as.factor(cnty_name))|&gt;
+  mutate(sample_source = as.factor(sample_source))|&gt;
+  mutate(clinical_signs_ = as.factor(clinical_signs_))|&gt;
+  mutate(lab_diagnostics_pcr = as.factor(lab_diagnostics_pcr))
+
+model &lt;- glm(lab_diagnostics_pcr ~ species + cnty_name + sample_source + clinical_signs_,
+  family = &quot;binomial&quot;,
+  data = data_forest
+)
+
+parameters::standardize_parameters(model, exponentiate = TRUE)</code></pre>
+<pre><code>## # Standardization method: refit
+## 
+## Parameter                               | Std_Odds_Ratio |           95% CI
+## ---------------------------------------------------------------------------
+## (Intercept)                             |       2.73e+07 | [0.00,         ]
+## speciesGoat                             |           0.73 | [0.24,     2.32]
+## speciesCattle                           |           2.80 | [0.72,    18.66]
+## speciesSheep                            |       3.63e-14 | [0.00, 1.98e+13]
+## cnty_nameSiaya                          |           0.90 | [0.33,     2.37]
+## sample_sourcehealth_facility            |       3.52e-09 | [0.00, 1.40e+32]
+## sample_sourcehealth_worker              |           1.71 | [0.54,     4.94]
+## sample_sourcetoll_free_line             |           0.88 | [0.28,     2.52]
+## clinical_signs_aggressive               |       2.41e-07 | [    , 1.84e+89]
+## clinical_signs_Anorexia                 |       6.31e-08 | [0.00, 2.49e+27]
+## clinical_signs_biting_objects           |       2.64e-07 | [    , 1.05e+89]
+## clinical_signs_Diarrhoea                |       4.29e-08 | [0.00, 3.74e+20]
+## clinical_signs_excessive_salivation     |       1.59e-07 | [    , 1.46e+89]
+## clinical_signs_groaning                 |           0.91 | [0.00, 6.61e+21]
+## clinical_signs_high_libido              |       2.28e-07 | [0.00, 1.13e+22]
+## clinical_signs_hydrophobia              |       3.49e-07 | [0.00, 4.52e+26]
+## clinical_signs_paralysis                |       1.36e-07 | [    , 1.83e+88]
+## clinical_signs_protrusion_of_the_tongue |       4.29e-08 | [0.00, 4.46e+29]
+## clinical_signs_Rabid_animal_bite        |           0.13 | [0.00, 2.95e+12]
+## clinical_signs_running_aimlessly        |       2.46e-07 | [    , 3.14e+88]
+## 
+## - Response is unstandardized.</code></pre>
+<div id="animal-samples-geo_locations" class="section level1">
+<h1>animal samples geo_locations</h1>
+<pre class="r"><code>sample_data &lt;- import(here::here(&quot;animal_samples.csv&quot;))
+
+sample_data_clean &lt;- sample_data |&gt;
+  clean_names() |&gt;
+  select(&quot;form_sample_collection_dt&quot;, &quot;form_coordinates&quot;, &quot;form_species&quot;,&quot;form_if_other&quot; ,&quot;form_cnty_name&quot;) |&gt;
+  rename_at(vars(starts_with(&quot;form_&quot;)), funs(str_remove(.,&quot;form_&quot;))) |&gt;
+  separate(coordinates, sep = &quot; &quot;, c(&quot;Latitude&quot;, &quot;Longitude&quot;, &quot;Elevation&quot;)) |&gt;
+  mutate_at(vars(cnty_name, species), funs(factor)) |&gt;
+  mutate(species=revalue(species, c(&quot;1&quot;=&quot;Dog&quot;, &quot;2&quot;=&quot;Cat&quot;, &quot;3&quot;= &quot;Goat&quot;, &quot;4&quot;=&quot;Donkey&quot;, &quot;5&quot;=&quot;Cattle&quot;, &quot;6&quot;=&quot;Sheep&quot;, &quot;7&quot; =&quot;Wild animal&quot;))) |&gt;
+  mutate(cnty_name=revalue(cnty_name, c(&quot;mkn_cnty&quot;=&quot;Makueni&quot;, &quot;sia_cnty&quot;=&quot;Siaya&quot;, &quot;---&quot;=&quot;Makueni&quot;))) |&gt;
+  select(-if_other)</code></pre>
+<pre><code>## Warning: `funs()` was deprecated in dplyr 0.8.0.
+## ℹ Please use a list of either functions or lambdas:
+## 
+## # Simple named list: list(mean = mean, median = median)
+## 
+## # Auto named with `tibble::lst()`: tibble::lst(mean, median)
+## 
+## # Using lambdas list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.</code></pre>
+<pre><code>## Warning: Expected 3 pieces. Additional pieces discarded in 160 rows [1, 2, 3, 4, 5, 6,
+## 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, ...].</code></pre>
+<pre><code>## Warning: `funs()` was deprecated in dplyr 0.8.0.
+## ℹ Please use a list of either functions or lambdas:
+## 
+## # Simple named list: list(mean = mean, median = median)
+## 
+## # Auto named with `tibble::lst()`: tibble::lst(mean, median)
+## 
+## # Using lambdas list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.</code></pre>
+<pre><code>## The following `from` values were not present in `x`: ---</code></pre>
+<pre class="r"><code>rio::export(sample_data_clean, &quot;/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/sample_data_clean.rds&quot;)</code></pre>
+</div>
 
 
 

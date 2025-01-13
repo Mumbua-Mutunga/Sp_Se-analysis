@@ -40,10 +40,12 @@ pacman::p_load(
 
 #loading the datasets
 
+# This data has the combined combined species per year and county
 data <- read_xlsx("Se_Sp.xlsx", sheet = "Sheet1") |>
   clean_names() |>
   dplyr::select(-c(comments, species_collective))  
 
+#contact tracing data
 contact_traced <- read.csv("animal_samples.csv") 
 
 contact_traced_clean <- contact_traced |>
@@ -56,18 +58,31 @@ contact_traced_clean <- contact_traced |>
   mutate(sample_collection_dt = dmy(sample_collection_dt)) |>
   mutate(species = revalue(species, c("1"="Dog", "2"="Cat", "3"= "Goat", "4"="Donkey", "5"="Cattle", "6"="Sheep", "7" = "Wild_animal"))) 
 
-
+# siaya county (sequenced and non sequenced) data 
 siaya_sq <- read.csv("siaya_sequenced.csv") |>
   clean_names()
 
+# makueni county (sequenced and non sequenced) data 
 makueni_sq <- read.csv("makueni_sequenced.csv") |>
   clean_names() |>
   dplyr::rename(sub_counties = sub_county,
                lab_diagnostics_pcr = lab_diagnostics )
 
 combined <- rbind(makueni_sq, siaya_sq) |>
-  mutate(date_collected = dmy(date_collected))
+  mutate(date_collected = dmy(date_collected))|>
+  mutate(rapid_diagnostic_test = recode(rapid_diagnostic_test,
+      "Positive " = "Positive"))
 
+# data used to plot the sample dist
+ct_data1 <- left_join(contact_traced_clean, combined, by = c("sample_collection_dt" = "date_collected", "cnty_name" = "county")) |>
+  separate(coordinates, sep = " ", c("Latitude", "Longitude", "Elevation")) |>
+  filter(!Latitude %in% "-1.3950553815811872")
+  #filter(!sequence_status %in% c(NA, ""))
+  
+
+rio::export(ct_data1, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/ct_data1.rds")
+
+# cleaning the contact tracing data 
 ct_data <- left_join(contact_traced_clean, combined, by = c("sample_collection_dt" = "date_collected", "cnty_name" = "county")) |>
   filter(!lab_diagnostics_pcr %in% NA) |>
   mutate(clinical_signs_ = paste(if_known, other, sep = " ")) |>
@@ -85,6 +100,7 @@ ct_data <- left_join(contact_traced_clean, combined, by = c("sample_collection_d
       "Biting_other_dogs" = "biting_objects",
       "The_Sheep_was_bitten_by_a_Stray_dog" = "Rabid_animal_bite",
       "Was_bitten_by_her_rabid_mother" = "Rabid_animal_bite")) 
+  
 
 # exporting the ct_data
 
@@ -165,5 +181,27 @@ model <- glm(lab_diagnostics_pcr ~ species + cnty_name + sample_source + clinica
 parameters::standardize_parameters(model, exponentiate = TRUE)
   
   
+```
+
+# animal samples geo_locations
+
+```{r}
+
+sample_data <- import(here::here("animal_samples.csv"))
+
+sample_data_clean <- sample_data |>
+  clean_names() |>
+  select("form_sample_collection_dt", "form_coordinates", "form_species","form_if_other" ,"form_cnty_name") |>
+  rename_at(vars(starts_with("form_")), funs(str_remove(.,"form_"))) |>
+  separate(coordinates, sep = " ", c("Latitude", "Longitude", "Elevation")) |>
+  mutate_at(vars(cnty_name, species), funs(factor)) |>
+  mutate(species=revalue(species, c("1"="Dog", "2"="Cat", "3"= "Goat", "4"="Donkey", "5"="Cattle", "6"="Sheep", "7" ="Wild animal"))) |>
+  mutate(cnty_name=revalue(cnty_name, c("mkn_cnty"="Makueni", "sia_cnty"="Siaya", "---"="Makueni"))) |>
+  select(-if_other)
+  
+
+rio::export(sample_data_clean, "/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/data/clean/sample_data_clean.rds")
+
+
 ```
 

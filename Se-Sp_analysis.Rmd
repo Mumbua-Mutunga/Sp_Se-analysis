@@ -4,13 +4,9 @@ author: "Mumbua Mutunga"
 date: "`r Sys.Date()`"
 output:
   html_document: default
-  word_document: default
   pdf_document: default
+  word_document: default
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ```{r, include=FALSE}
 
@@ -40,22 +36,51 @@ pacman::p_load(
   effectsize,
   RColorBrewer,
   apyramid,
+  caret,
+  patchwork,
   tidyverse
 )
 
 ```
 
-
 ```{r, include=FALSE}
 # Loading the datasets that we need
 
 con_table<- import(here::here("data","clean", "con_table.rds")) #for making the confusion matrix
+
 ct_data <- import(here::here("data", "clean", "ct_data.rds")) # for analysis
 ct_data_ <- import(here::here("data", "clean", "ct_data_.rds"))
+
 ct_plot_dt <- import(here::here("data", "clean", "ct_plot_dt.rds"))
+
 combined <- import(here::here("data", "clean", "combined.rds"))
 
+sample_data <- import(here::here("data","clean","sample_data_clean.rds"))
+
+mapping_data <- import(here::here("data","clean","ct_data1.rds"))
+
+makueni_sd <-sample_data |>
+  filter(cnty_name %in% "Makueni") |>
+  filter(!Latitude %in% c("-1.3950553815811872"))
+
+projcrs <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+
+makueni_sd <- st_as_sf(x = makueni_sd,                         
+           coords = c("Longitude", "Latitude"),
+           crs = projcrs)
+
+
+siaya_sd <-sample_data |>
+  filter(cnty_name %in% "Siaya")
+
+siaya_sd <- st_as_sf(x = siaya_sd,                         
+           coords = c("Longitude", "Latitude"),
+           crs = projcrs)
+
 counties <- st_read(here::here("data","clean","gadm41_KEN_1.shp"))
+
+makueni_map <- st_read(here::here("data","clean","Mkn_subcounties.shp"))
+siaya_map <- st_read(here::here("data","clean","Siaya_subcounties.shp"))
 
 chosen <- counties |>
   filter(NAME_1 %in% c("Makueni", "Siaya"))
@@ -63,6 +88,7 @@ chosen <- counties |>
 ```
 
 # Se, Sp, NPV, PPV
+
 ```{r warning=FALSE, echo=FALSE}
 
 table1 <- matrix(as.numeric(unlist(con_table)),nrow=nrow(con_table)) #converting the dataframe to matrix
@@ -70,8 +96,12 @@ table1 <- matrix(as.numeric(unlist(con_table)),nrow=nrow(con_table)) #converting
 rval <- epi.tests(table1, conf.level = 0.95)
 print(rval)
 
-```
+x <- matrix(c(90, 6, 2, 14), nrow = 2)
+x
 
+confusionMatrix(x, mode = "everything")
+
+```
 
 # PCR +VE and -VE of the relevant variables
 
@@ -88,7 +118,6 @@ ggplot(ct_plot_dt, aes(clinical_signs_, percentage, fill = lab_diagnostics_pcr))
   labs(x = "clinical signs", y = "Percentage", fill = "PCR test")
 
 ```
-
 
 ```{r warning=FALSE, echo=FALSE, include=FALSE}
 # Calculation of risk ratios
@@ -119,7 +148,6 @@ table_2 <- ct_data |>
 
 
 ```
-
 
 ```{r, include=F}
 
@@ -242,7 +270,8 @@ ggsave("plot1.png", plot1,
 ggsave("plot1.svg", plot1, device = "svg")
 ```
 
-# Table species vs the symptoms 
+# Table species vs the symptoms
+
 ```{r warning=FALSE, echo=FALSE}
 
 my_table <- flextable(table_2)|>
@@ -354,9 +383,39 @@ ggplot(ts_plot, aes(x=date_collected, fill =rapid_diagnostic_test ))+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5))+
   labs(x= "Sample collection timelines", y = "Number of samples", fill = "RDT outcome")+
   scale_fill_brewer(palette = "Set1", direction = 1)
-  #facet(by = "county")
 
-ggsave("plot3.png") 
+ggsave("plot3a.png") 
+
+ggplot(ts_plot, aes(x=date_collected, fill =rapid_diagnostic_test ))+
+  geom_histogram(bins=30, colour="white")+
+  scale_y_continuous( breaks = seq(from =0, to=20, by=5), expand = c(0,0))+
+  scale_x_date(breaks = "2 month", expand = c(0,0)) +
+  labs(x= "Sample collection timelines", y = "Number of samples", fill = "RDT outcome")+
+  scale_fill_brewer(palette = "Set1", direction = 1)+
+  facet_wrap(~county,  scales = "free_x")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5))
+
+ggsave("plot3b.png") 
+
+ts_plot2 <- ts_plot |>
+  filter(rapid_diagnostic_test %in% "Positive")
+
+ggplot(ts_plot2, aes(x=date_collected, fill =rapid_diagnostic_test ))+
+  geom_histogram(bins=30, colour="white")+
+  scale_y_continuous( breaks = seq(from =0, to=20, by=5), expand = c(0,0))+
+  scale_x_date(breaks = "month", expand = c(0,0)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5))+
+  labs(x= "Sample collection timelines", y = "Number of samples", fill = "RDT outcome")+
+  scale_fill_brewer(palette = "Set1", direction = 1)+
+  facet_wrap(~county,  scales = "free_x")
+
+ggsave("plot3c.png") 
+
+species <- ct_data |>
+  select(species, bar_code, sequence_status) |>
+  distinct(species,bar_code, sequence_status) |>
+  filter(!sequence_status %in% "")
+  
 
 Fig <- ct_data |>
   select(sample_collection_dt, species, cnty_name, clinical_signs_, lab_diagnostics_pcr, rapid_diagnostic_test, sample_source) |>
@@ -364,40 +423,107 @@ Fig <- ct_data |>
   group_by(species, clinical_signs_) |>
   dplyr::count()
 
-ggplot(data = Fig)+
+Fig_new = Fig
+for(i in unique(Fig$clinical_signs_)){
+  for(j in unique(Fig$species)){
+    if(nrow(Fig[Fig$clinical_signs_ == i &
+                     Fig$species == j,]) == 0){
+      new_row = data.frame(
+                  clinical_signs_ = i, 
+                  species = j, 
+                  n = 0)
+      Fig_new = rbind(Fig_new, new_row)
+    }
+  }
+}
+
+ggplot(data = Fig_new)+
   geom_col(aes(y=n, x = clinical_signs_,fill = species), position = "dodge") +
   labs(x = "Clinical signs", y = "Number", fill="Species")+
   scale_fill_brewer(palette = "Set1")+
-  coord_flip()
+  coord_flip()+
+  theme_bw()
 
 ggsave("plot4.png")
   
 ```
 
-
-
 # County plots
 
 ```{r}
 
-ggplot()+
+plot5 <- ggplot()+
   geom_sf(data=counties, aes(geometry=geometry), fill="white")+
   geom_sf(data = chosen, aes(geometry=geometry),fill="orange")+
   geom_sf_text(data = chosen, aes(label = NAME_1),size = 3)+
-  labs(x="Longitude",y="Latitude")+theme(text=element_text(size=15))
+  labs(x="Longitude",y="Latitude")+theme(text=element_text(size=15)) +
+  theme(panel.border = element_blank())
 
 ggsave("plot5.png")
 
 ```
 
 # data with RDT & clinical signs
+
 ```{r echo=FALSE}
 
 new_plan <- test |>
   select(sample_collection_dt, species, clinical_signs_, lab_diagnostics_pcr, rapid_diagnostic_test, test_result) |>
   group_by(species, clinical_signs_,test_result) |>
-  dplyr::count()
+  dplyr::count()|>
+  group_by(test_result) |>
+  mutate(cent = (n/ sum(n))*100)
 
+new_plan_zeros = new_plan
+for(i in unique(new_plan$clinical_signs_)){
+  for(j in unique(new_plan$test_result)){
+    if(nrow(new_plan[new_plan$clinical_signs_ == i &
+                     new_plan$test_result == j,]) == 0){
+      new_row = data.frame(species = NA, 
+                  clinical_signs_ = i, 
+                  test_result = j, 
+                  n = 0,
+                  cent = 0)
+      new_plan_zeros = rbind(new_plan_zeros, new_row)
+    }
+  }
+}
+
+for(k in 1:nrow(new_plan_zeros)){
+  if(new_plan_zeros$test_result[k] == "True_Positive"){
+    new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/90)*100
+
+  }
+  if(new_plan_zeros$test_result[k] == "False_Positive"){
+    new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/6)*100
+  }
+  if(new_plan_zeros$test_result[k] == "True_Negative"){
+    new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/14)*100
+  }
+  if(new_plan_zeros$test_result[k] == "False_Negative"){
+    new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/2)*100
+  }
+}
+
+new_plan_zeros$test_result <- factor(new_plan_zeros$test_result, levels = c("True_Positive", "False_Positive", "True_Negative",
+        "False_Negative" ))
+
+new_plan_zeros$clinical_signs_ <- as.factor(new_plan_zeros$clinical_signs_)
+
+new_plan_zeros$cent <- as.integer(new_plan_zeros$cent)
+
+ggplot(data =new_plan_zeros,aes(x=forcats::fct_infreq(clinical_signs_, cent), y = cent, fill = test_result))+
+  geom_col(position = "dodge")+
+  scale_fill_manual(values =c("#48A0B2" ,"#5E4FA2","#CCEA9D", "red"))+
+  labs(x="Clinical Signs", y= "Percentage", fill="RDT Results")+
+  facet_grid(.~test_result, scales = "free_x")+
+  theme_bw() +
+  coord_flip() +
+  ylim(c(0,100))
+  
+
+ggsave("plotxx.png")
+                              
 TP <- new_plan |>
   filter(test_result %in% "True_Positive")
 
@@ -451,7 +577,6 @@ ggsave("FN_plot.png", FN_plot)
 
 ```
 
-
 # Pyramids
 
 ```{r}
@@ -503,17 +628,88 @@ ggplot(data=sample_data,aes(x=as.factor(n),fill=clinical_signs_)) +
 
 ```{r}
 sample_data$test_result <- factor(sample_data$test_result, levels = c("True_Positive", "False_Positive", "True_Negative",
-        "False_Negative"                                                              ))
+        "False_Negative" ))
 
 ggplot(data = sample_data)+
-  geom_col(aes(x=forcats::fct_infreq(clinical_signs_, n), y=n, fill = clinical_signs_), fill = "orange") +
-  labs(x = "Clinical signs", y = "Number", fill="Clinical signs")+
-  facet_grid(.~test_result) +
+  geom_col(aes(x=forcats::fct_infreq(clinical_signs_, n), y=n, fill = test_result)) +
+  labs(x = "Clinical signs", y = "Number", fill="RDT Results")+
+  facet_grid(.~test_result, scales = "free_x") +
   theme_bw()+
-  coord_flip()
+  coord_flip() +
+  #scale_y_continuous(labels = abs) +
+  scale_fill_manual(values =c("#48A0B2" ,"#5E4FA2","#CCEA9D", "red"))+
+  #scale_y_continuous(breaks = seq(0,70,5)) 
+  ylim(c(0,65)) 
+  
+
+ggsave("plot6b.png")
+
+
+ggplot()+
+  geom_col(aes(x=n, y = clinical_signs_), fill = "orange", data = sample_data %>% mutate(subset = "True_Positive")) +
+  geom_col(aes(x=n, y = clinical_signs_), fill = "orange", data = sample_data %>% filter(test_result == "False_Positive") %>%
+            mutate(subset = "False_Positive")) +
+  facet_wrap(~ subset, scales = "free_x") +
+  geom_col(aes(x=n, y = clinical_signs_), fill = "orange", data = sample_data %>% filter(test_result == "True_Negative") %>%
+            mutate(subset = "True_Negative")) +
+  facet_wrap(~ subset, scales = "free_x") +
+  geom_col(aes(x=n, y = clinical_signs_), fill = "orange", data = sample_data %>% filter(test_result == "False_Negative") %>%
+            mutate(subset = "False_Negative")) +
+  facet_wrap(~ subset, scales = "free_x") +
+  labs(y = "Clinical signs", x = "Number") +
+  theme_bw()
 
 ggsave("plot6.png")
-
+  
 ```
 
+# Mapping animal samples
+```{r}
+
+# Makueni
+
+mapping_mkn <- st_as_sf(mapping_data, coords = c('Longitude', 'Latitude')) |>
+  filter(cnty_name %in% "Makueni")
+
+st_crs(mapping_mkn) = 4326
+
+plot7 <- ggplot()+
+  geom_sf(data=makueni_map, aes(geometry=geometry), fill = "white")+
+  geom_sf(data = mapping_mkn, aes(geometry=geometry, col = species),alpha = 0.7) +
+  #theme_bw()+
+  labs(x="Longitude",y="Latitude")+
+  theme(panel.border = element_blank())
+  #theme(text=element_text(size=18))
+
+plot7
+
+ggsave("plot7.png")
+
+# Siaya
+
+mapping_siaya <- st_as_sf(mapping_data, coords = c('Longitude', 'Latitude')) |>
+  filter(cnty_name %in% "Siaya")
+
+st_crs(mapping_siaya) = 4326
+
+plot8 <- ggplot()+
+  geom_sf(data=siaya_map, aes(geometry=geometry), fill = "white")+
+  geom_sf(data = mapping_siaya, aes(geometry = geometry, col = species),alpha = 0.7)+
+  theme(panel.border = element_blank())+
+  #theme_bw()+
+  labs(x="Longitude",y="Latitude")
+  
+  #theme(text=element_text(size=18))
+plot8
+
+ggsave("plot8.png")
+
+mapping__ <- mapping_data |>
+  filter(!sequence_status %in% NA) |>
+  filter(!clinical_signs %in% "0")
+
+arranged_plot <- (plot7 / plot8) | plot5 
+
+ggsave("arranged_plot.png", arranged_plot, width = 18, height = 12)
+```
 

@@ -1,0 +1,302 @@
+---
+title: "Paper_Se_Sp_analysis"
+author: "Mumbua Mutunga"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+
+# Loading the packages
+
+pacman::p_load(
+  rio,
+  here,
+  sf,
+  janitor,
+  lubridate,
+  epikit,       
+  gtsummary,    
+  scales,       
+  flextable,
+  readxl,
+  forcats,
+  epiR,
+  plyr, 
+  epitools,
+  geepack, 
+  marginaleffects,
+  ggpubr,
+  psych,
+  tinytex,
+  forester,
+  effectsize,
+  RColorBrewer,
+  apyramid,
+  caret,
+  patchwork,
+  tidyverse
+)
+
+```
+
+```{r, include=FALSE}
+# Loading the datasets that we need for mapping
+
+con_table<- import(here::here("data","clean", "con_table.rds")) #for making the confusion matrix
+
+counties <- st_read(here::here("data","clean","gadm41_KEN_1.shp"))
+
+mapping_data <- import(here::here("data","clean","ct_data1.rds"))
+
+makueni_map <- st_read(here::here("data","clean","Mkn_subcounties.shp"))
+siaya_map <- st_read(here::here("data","clean","Siaya_subcounties.shp"))
+
+chosen <- counties |>
+  filter(NAME_1 %in% c("Makueni", "Siaya"))
+
+#Kenyan map showing the study counties
+
+plot1 <- ggplot()+
+  geom_sf(data=counties, aes(geometry=geometry), fill="white")+
+  geom_sf(data = chosen, aes(geometry=geometry),fill="orange")+
+  geom_sf_text(data = chosen, aes(label = NAME_1),size = 3)+
+  labs(x="Longitude",y="Latitude")+theme(text=element_text(size=15)) +
+  theme(panel.border = element_blank())
+
+
+# Makueni
+
+mapping_mkn <- st_as_sf(mapping_data, coords = c('Longitude', 'Latitude')) |>
+  filter(cnty_name %in% "Makueni")
+
+st_crs(mapping_mkn) = 4326
+
+plot2 <- ggplot()+
+  geom_sf(data=makueni_map, aes(geometry=geometry), fill = "white")+
+  geom_sf(data = mapping_mkn, aes(geometry=geometry, col = species),alpha = 0.7) +
+  #theme_bw()+
+  labs(x="Longitude",y="Latitude")+
+  theme(panel.border = element_blank())
+  #theme(text=element_text(size=18))
+
+plot2
+
+# Siaya
+
+mapping_siaya <- st_as_sf(mapping_data, coords = c('Longitude', 'Latitude')) |>
+  filter(cnty_name %in% "Siaya")
+
+st_crs(mapping_siaya) = 4326
+
+plot3 <- ggplot()+
+  geom_sf(data=siaya_map, aes(geometry=geometry), fill = "white")+
+  geom_sf(data = mapping_siaya, aes(geometry = geometry, col = species),alpha = 0.7)+
+  theme(panel.border = element_blank())+
+  #theme_bw()+
+  labs(x="Longitude",y="Latitude")
+  
+  #theme(text=element_text(size=18))
+plot3
+
+
+arranged_plot <- (plot2 / plot3) | plot1
+
+ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp:Se_Manuscript/Figure 1.png", arranged_plot, width = 18, height = 12)
+```
+
+
+# Time series
+
+```{r warning=FALSE, echo=FALSE,}
+
+combined <- import(here::here("data", "clean", "combined.rds"))
+
+#Plotting the RDT data time series
+
+ts_plot <- combined |>
+  select(date_collected, county, rapid_diagnostic_test, lab_diagnostics_pcr) |>
+  mutate(rapid_diagnostic_test = recode(rapid_diagnostic_test, 
+             "Positive " = "Positive")) |>
+  filter(!rapid_diagnostic_test %in% "Inconclusive") |>
+  group_by(date_collected,county, rapid_diagnostic_test) |>
+  dplyr::count()|>
+  mutate(rapid_diagnostic_test = as.factor(rapid_diagnostic_test)) |>
+  mutate(n = as.numeric(n))
+
+
+plot4 <- ggplot(ts_plot, aes(x=date_collected, fill =rapid_diagnostic_test ))+
+  geom_histogram(bins=30, colour="white")+
+  scale_y_continuous( breaks = seq(from =0, to=20, by=5), expand = c(0,0))+
+  scale_x_date(breaks = "1 month", expand = c(0,0)) +
+  labs(x= "Sample collection timelines", y = "Number of samples", fill = "RDT outcome")+
+  scale_fill_brewer(palette = "Set1", direction = 1)+
+  facet_wrap(~county,  scales = "free_x")+
+  theme(axis.text.x = element_text(size = 12, angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14))
+
+plot4
+
+#Plotting the PCR data time series
+
+ts_plot_pcr <- combined |>
+  select(date_collected, county, rapid_diagnostic_test, lab_diagnostics_pcr) |>
+  filter(!lab_diagnostics_pcr %in% "") |>
+  group_by(date_collected,county, lab_diagnostics_pcr) |>
+  dplyr::count()|>
+  mutate(lab_diagnostics_pcr = as.factor(lab_diagnostics_pcr)) |>
+  mutate(n = as.numeric(n))
+
+
+plot5 <- ggplot(ts_plot_pcr, aes(x=date_collected, fill =lab_diagnostics_pcr ))+
+  geom_histogram(bins=30, colour="white")+
+  scale_y_continuous( breaks = seq(from =0, to=20, by=5), expand = c(0,0))+
+  scale_x_date(breaks = "1 month", expand = c(0,0)) +
+  labs(x= "Sample collection timelines", y = "Number of samples", fill = "PCR outcome")+
+  scale_fill_brewer(palette = "Set1", direction = 1)+
+  facet_wrap(~county,  scales = "free_x")+
+  theme(axis.text.x = element_text(size = 12, angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14))
+
+
+ts_arranged <-(plot4 / plot5) 
+
+
+ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp:Se_Manuscript/Figure 3.png", ts_arranged, width = 18, height = 12)
+
+# #getting the correlation of time and the results
+# pos_corr <- ts_plot |>
+#   filter(rapid_diagnostic_test %in% "Positive")
+# 
+# pos_corr$date_collected <- as.numeric(as.Date(pos_corr$date_collected, format = "%Y-%m-%d")) # If it's a date
+# 
+# pos_corr$rapid_diagnostic_test <- as.numeric(pos_corr$rapid_diagnostic_test) # If it's a factor or character
+# 
+# cor(pos_corr$date_collected, pos_corr$rapid_diagnostic_test, method = "pearson")
+
+```
+
+# clinical signs
+
+```{r}
+# cleaning the contact tracing data 
+
+ct_data <- import(here::here("data", "clean", "ct_data.rds"))
+
+# figure using the entire dataset (205 samples)
+
+Fig <- ct_data |>
+  select(sample_collection_dt, species, cnty_name, clinical_signs_, lab_diagnostics_pcr, rapid_diagnostic_test, sample_source) |>
+  #filter(!lab_diagnostics_pcr %in% "") |>
+  group_by(species, clinical_signs_) |>
+  dplyr::count()
+
+Fig_new = Fig
+for(i in unique(Fig$clinical_signs_)){
+  for(j in unique(Fig$species)){
+    if(nrow(Fig[Fig$clinical_signs_ == i &
+                     Fig$species == j,]) == 0){
+      new_row = data.frame(
+                  clinical_signs_ = i, 
+                  species = j, 
+                  n = 0)
+      Fig_new = rbind(Fig_new, new_row)
+    }
+  }
+}
+
+ggplot(data = Fig_new)+
+  geom_col(aes(y=n, x = clinical_signs_,fill = species), position = "dodge") +
+  labs(x = "Clinical signs", y = "Number", fill="Species")+
+  scale_fill_brewer(palette = "Set1", direction = 1)+
+  coord_flip()+
+  theme_bw()
+
+
+ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp:Se_Manuscript/Figure 4 supplementary.png", width = 18, height = 12)
+
+
+# figure using the sequenced samples
+
+Fig_seq <- ct_data |>
+  select(sample_collection_dt, species, cnty_name, clinical_signs_, lab_diagnostics_pcr, rapid_diagnostic_test, sample_source) |>
+  filter(!lab_diagnostics_pcr %in% "") |>
+  group_by(species, clinical_signs_) |>
+  dplyr::count()
+
+Fig_new_seq <- Fig_seq
+
+for(i in unique(Fig_seq$clinical_signs_)){
+  for(j in unique(Fig_seq$species)){
+    if(nrow(Fig_seq[Fig_seq$clinical_signs_ == i &
+                     Fig_seq$species == j,]) == 0){
+      new_row = data.frame(
+                  clinical_signs_ = i, 
+                  species = j, 
+                  n = 0)
+      Fig_new_seq = rbind(Fig_new_seq, new_row)
+    }
+  }
+}
+
+ggplot(data = Fig_new_seq)+
+  geom_col(aes(y=n, x = clinical_signs_,fill = species), position = "dodge") +
+  labs(x = "Clinical signs", y = "Number", fill="Species")+
+  scale_fill_brewer(palette = "Set1", direction = 1)+
+  coord_flip()+
+  theme_bw()
+
+ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp:Se_Manuscript/Figure 4.png", width = 18, height = 12)
+
+#incidence of positive cases per year
+
+inc_mak <- combined |>
+  select(date_collected, county, rapid_diagnostic_test) |>
+  filter(rapid_diagnostic_test %in% "Positive") |>
+  filter(county %in% "Makueni") |>
+  mutate(year = format(date_collected, "%Y")) |>  # Extract the year
+  group_by(year) |>                     # Group by year
+  count()
+
+
+inc_siaya <- combined |>
+  filter(rapid_diagnostic_test %in% "Positive") |>
+  filter(county %in% "Siaya") |>
+  mutate(year = format(date_collected, "%Y")) |>  # Extract the year
+  group_by(year) |>                     # Group by year
+  count() 
+
+# if in two counties we have 94 samples that are positive if we could escalate this to the remaining 45 counties the 
+```
+
+
+ct_data_ <- import(here::here("data", "clean", "ct_data_.rds"))
+
+ct_plot_dt <- import(here::here("data", "clean", "ct_plot_dt.rds"))
+
+
+
+sample_data <- import(here::here("data","clean","sample_data_clean.rds"))
+
+mapping_data <- import(here::here("data","clean","ct_data1.rds"))
+
+makueni_sd <-sample_data |>
+  filter(cnty_name %in% "Makueni") |>
+  filter(!Latitude %in% c("-1.3950553815811872"))
+
+projcrs <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+
+makueni_sd <- st_as_sf(x = makueni_sd,                         
+           coords = c("Longitude", "Latitude"),
+           crs = projcrs)
+
+
+siaya_sd <-sample_data |>
+  filter(cnty_name %in% "Siaya")
+
+siaya_sd <- st_as_sf(x = siaya_sd,                         
+           coords = c("Longitude", "Latitu
