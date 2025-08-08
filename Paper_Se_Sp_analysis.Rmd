@@ -8,6 +8,10 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+# 205 samples collected; but only 112 sequenced, of which 85 got clinical signs & geocoord metadata
+# 17 samples had no questionnaire
+# 112 were tested by PCR & RDT; subset to 85 with clinical signs bc those have geo-coordinates
+
 
 # Loading the packages
 
@@ -46,65 +50,76 @@ pacman::p_load(
 # Loading the datasets that we need for mapping
 
 con_table<- import(here::here("data","clean", "con_table.rds")) #for making the confusion matrix
+con_table<- import("data/clean/con_table.rds")
 
 counties <- st_read(here::here("data","clean","gadm41_KEN_1.shp"))
+counties <- st_read("data/clean/gadm41_KEN_1.shp")
 
 mapping_data <- import(here::here("data","clean","ct_data1.rds"))
+mapping_data <- import("data/clean/ct_data1.rds")
 
 makueni_map <- st_read(here::here("data","clean","Mkn_subcounties.shp"))
 siaya_map <- st_read(here::here("data","clean","Siaya_subcounties.shp"))
+
+makueni_map <- st_read("data/clean/Mkn_subcounties.shp")
+siaya_map <- st_read("data/clean/Siaya_subcounties.shp")
 
 chosen <- counties |>
   filter(NAME_1 %in% c("Makueni", "Siaya"))
 
 #Kenyan map showing the study counties
 
-plot1 <- ggplot()+
+kenya_panel <- ggplot()+
   geom_sf(data=counties, aes(geometry=geometry), fill="white")+
   geom_sf(data = chosen, aes(geometry=geometry),fill="orange")+
-  geom_sf_text(data = chosen, aes(label = NAME_1),size = 3)+
-  labs(x="Longitude",y="Latitude")+theme(text=element_text(size=15)) +
+  geom_sf_text(data = chosen, aes(label = NAME_1),size = 3, nudge_x = c(1,-0.3), nudge_y = c(0.5,0.85)) +
+  labs(x="Longitude",y="Latitude")+
+  theme(text=element_text(size=11)) +
   theme(panel.border = element_blank())
-
+kenya_panel
 
 # Makueni
-
 mapping_mkn <- st_as_sf(mapping_data, coords = c('Longitude', 'Latitude')) |>
   filter(cnty_name %in% "Makueni")
 
 st_crs(mapping_mkn) = 4326
 
-plot2 <- ggplot()+
-  geom_sf(data=makueni_map, aes(geometry=geometry), fill = "white")+
+makueni_panel <- ggplot()+
+  geom_sf(data=makueni_map, aes(geometry=geometry), fill = "white") +
   geom_sf(data = mapping_mkn, aes(geometry=geometry, col = species),alpha = 0.7) +
+  coord_sf(xlim = c(37.1, 38.5), ylim = c(-1.4, -3), expand = FALSE) + #width = 1.4
   #theme_bw()+
-  labs(x="Longitude",y="Latitude")+
-  theme(panel.border = element_blank())
+  labs(x="",y="")+
+  theme(panel.border = element_blank(), 
+        text=element_text(size=11), 
+        legend.position="right")
   #theme(text=element_text(size=18))
-
-plot2
+makueni_panel
 
 # Siaya
-
 mapping_siaya <- st_as_sf(mapping_data, coords = c('Longitude', 'Latitude')) |>
   filter(cnty_name %in% "Siaya")
 
 st_crs(mapping_siaya) = 4326
 
-plot3 <- ggplot()+
+siaya_panel <- ggplot()+
   geom_sf(data=siaya_map, aes(geometry=geometry), fill = "white")+
   geom_sf(data = mapping_siaya, aes(geometry = geometry, col = species),alpha = 0.7)+
-  theme(panel.border = element_blank())+
-  #theme_bw()+
-  labs(x="Longitude",y="Latitude")
+    coord_sf(xlim = c(33.75, 34.7), ylim = c(0.8, -0.8), expand = FALSE) + # Width = 1!
+    labs(x="",y="")+
+  theme(panel.border = element_blank(), 
+        text=element_text(size=11), 
+        legend.position="none" )
   
   #theme(text=element_text(size=18))
-plot3
+siaya_panel
 
-
-arranged_plot <- (plot2 / plot3) | plot1
-
-ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 1.png", arranged_plot, width = 18, height = 12)
+# arranged_plot <- (plot2 / plot3) | plot1
+arranged_plot <- (kenya_panel | siaya_panel | makueni_panel) + 
+  plot_layout(widths = c(1.4, 0.8, 1.2)) + plot_annotation(tag_levels = 'A') # Reordered panels to map across
+ggsave("Figs/Figure_1.png", arranged_plot, width = 12, height = 4.5)
+#ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 1.png", 
+       
 ```
 
 
@@ -112,9 +127,96 @@ ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis
 
 ```{r warning=FALSE, echo=FALSE,}
 
+# some samples were taken out bc were not within the study area
 combined <- import(here::here("data", "clean", "combined.rds"))
+combined <- import("data/clean/combined.rds")
 
-#Plotting the RDT data time series
+# Combined data is 205 rows but the mapping_data is 214
+samples_df <- combined  %>%
+  mutate(rapid_diagnostic_test = recode(rapid_diagnostic_test,"Positive " = "Positive"),
+         RDT = recode(rapid_diagnostic_test,
+                      "Positive" = "RDT+",
+                      "Negative" = "RDT-",
+                      "Inconclusive" = "RDT?"),
+         PCR = recode(lab_diagnostics_pcr,
+                      "Positive" = "PCR+",
+                      "Negative" = "PCR-"),
+         test_results = paste(RDT, PCR, sep = ""))
+
+# Example colour palette:
+reds <- rev(colorRampPalette(c("#FEE0D2", "#67000D"))(7))
+greys <- colorRampPalette(c("#BDBDBD", "#636363"))(4)
+
+results_colors <- c(
+  "RDT+" = reds[1],  # reds[1]
+  "RDT+PCR+" = reds[2],  # 
+  "RDT+PCR-" = reds[3],  # 
+  "RDT-PCR+" = reds[4],  # 
+  "RDT?PCR+" = reds[5],  # 
+  "RDT-PCR-" = greys[1],   # Greys
+  "RDT-" = greys[2]   # 
+)
+
+# Set the palatte order
+outcomes <- names(results_colors)
+samples_df <- samples_df %>%
+  mutate(test_results = factor(test_results, levels = rev(outcomes)))  # keep all levels
+
+# Pretty plot of Makueni samples
+makueni_samples <- samples_df %>%
+  filter(county == "Makueni") %>%
+  mutate(
+    Date = as.Date(date_collected),                 # ensure original is Date
+    Month = floor_date(Date, "month")) %>%
+  count(Month, test_results) %>%           # count number of outcomes per date
+  complete(Month = seq(min(Month), max(Month), by = "1 month"),
+           test_results = rev(outcomes),
+           fill = list(n = 0)) %>%
+  ggplot(aes(x = Month, y = n, fill = test_results)) +
+  geom_bar(stat = "identity") +
+  scale_x_date(
+    date_breaks = "4 months",    # show every 3rd month
+    date_labels = "%b %Y") +        # e.g. "Jan 2024"
+    # limits = c(as.Date("2020-06-01"),as.Date("2022-09-01"))) +
+  scale_fill_manual(values = results_colors, drop = FALSE) +
+  scale_y_continuous(breaks = seq(0,20,by=2), limits = c(0,14)) +
+  labs(title = "Makueni",
+       x = "Month", y = "Tests", fill = "Outcome") +
+  theme(text=element_text(size=11), legend.position="none" )
+makueni_samples
+
+# Pretty plot of Siaya samples
+siaya_samples <- samples_df %>%
+  filter(county == "Siaya") %>%
+  mutate(
+    Date = as.Date(date_collected),                 # ensure original is Date
+    Month = floor_date(Date, "month")) %>%
+  count(Month, test_results) %>%           # count number of outcomes per date
+  complete(Month = seq(min(Month), max(Month), by = "1 month"),
+           test_results = rev(outcomes),
+           fill = list(n = 0)) %>%
+  ggplot(aes(x = Month, y = n, fill = test_results)) +
+  geom_bar(stat = "identity") +
+  scale_x_date(
+    date_breaks = "4 months",    # show every 3rd month
+    date_labels = "%b %Y") + #,        # e.g. "Jan 2024"
+  # limits = c(as.Date("2021-08-01"),as.Date("2022-08-01"))) +
+  scale_fill_manual(values = results_colors, drop = FALSE) +
+  scale_y_continuous(breaks = seq(0,20,by=2), limits = c(0,14)) +
+  labs(title = "Siaya",
+       x = "Month", y = "Tests", fill = "Outcome") +
+    theme(text=element_text(size=11), legend.position="left" )
+siaya_samples
+
+ts_plot <- (siaya_samples | makueni_samples) + 
+  plot_layout(ncol = 2, widths = c(1, 2)) + 
+  plot_annotation(tag_levels = 'A') # Reordered panels to map across
+ggsave("Figs/Figure_2.png", ts_plot, width = 10, height = 4)
+
+
+
+
+#Plotting the RDT data time series - Katie to look at and give example barplot!
 
 ts_plot <- combined |>
   select(date_collected, county, rapid_diagnostic_test, lab_diagnostics_pcr) |>
@@ -165,8 +267,9 @@ plot5 <- ggplot(ts_plot_pcr, aes(x=date_collected, fill =lab_diagnostics_pcr ))+
 
 ts_arranged <-(plot4 / plot5) 
 
-
-ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 3.png", ts_arranged, width = 18, height = 12)
+ggsave("Figs/Figure_3.png", 
+#ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 3.png", 
+ts_arranged, width = 18, height = 12)
 
 # #getting the correlation of time and the results
 # pos_corr <- ts_plot |>
@@ -186,6 +289,7 @@ ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis
 # cleaning the contact tracing data 
 
 ct_data <- import(here::here("data", "clean", "ct_data.rds"))
+ct_data <- import("data/clean/ct_data.rds")
 
 # figure using the entire dataset (205 samples)
 
@@ -195,6 +299,7 @@ Fig <- ct_data |>
   group_by(species, clinical_signs_) |>
   dplyr::count()
 
+# Revise so as to capture - bc this should be per dog ID (not repeating)
 Fig_new = Fig
 for(i in unique(Fig$clinical_signs_)){
   for(j in unique(Fig$species)){
@@ -216,8 +321,9 @@ ggplot(data = Fig_new)+
   coord_flip()+
   theme_bw()
 
-
-ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 4 supplementary.png", width = 18, height = 12)
+ggsave("Figs/Figure_4_supplementary.png", 
+#ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 4 supplementary.png", 
+       width = 18, height = 12)
 
 
 # figure using the sequenced samples
@@ -250,7 +356,9 @@ ggplot(data = Fig_new_seq)+
   coord_flip()+
   theme_bw()
 
-ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 4.png", width = 18, height = 12)
+ggsave("Figs/Figure-4.png", 
+# ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 4.png", 
+       width = 18, height = 12)
 
 #incidence of positive cases per year
 
@@ -347,7 +455,8 @@ ggplot(data =new_plan_zeros,aes(x=forcats::fct_infreq(clinical_signs_, cent), y 
   coord_flip() +
   ylim(c(0,100))
   
-ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 5.png", width = 18, height = 12)
+ggsave("Figs/Figure_5.png", width = 18, height = 12)
+#ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 5.png", width = 18, height = 12)
 
 ```
 

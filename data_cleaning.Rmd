@@ -45,7 +45,7 @@ data <- read_xlsx("Se_Sp.xlsx", sheet = "Sheet1") |>
   clean_names() |>
   dplyr::select(-c(comments, species_collective))  
 
-#contact tracing data
+# contact tracing data
 contact_traced <- read.csv("animal_samples.csv") 
 
 contact_traced_clean <- contact_traced |>
