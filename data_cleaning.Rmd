@@ -41,12 +41,12 @@ pacman::p_load(
 #loading the datasets
 
 # This data has the combined combined species per year and county
-data <- read_xlsx("Se_Sp.xlsx", sheet = "Sheet1") |>
+data <- import(here::here("raw_data","Se_Sp.xlsx"), sheet = "Sheet1") |>
   clean_names() |>
   dplyr::select(-c(comments, species_collective))  
 
 # contact tracing data
-contact_traced <- read.csv("animal_samples.csv") 
+contact_traced <- import(here::here("raw_data","animal_samples.csv"))
 
 contact_traced_clean <- contact_traced |>
   dplyr::rename_at(vars(starts_with("form.")), funs(str_remove(.,"form."))) |> 
@@ -59,11 +59,11 @@ contact_traced_clean <- contact_traced |>
   mutate(species = revalue(species, c("1"="Dog", "2"="Cat", "3"= "Goat", "4"="Donkey", "5"="Cattle", "6"="Sheep", "7" = "Wild_animal"))) 
 
 # siaya county (sequenced and non sequenced) data 
-siaya_sq <- read.csv("siaya_sequenced.csv") |>
+siaya_sq <- import(here::here("raw_data","siaya_sequenced.csv")) |>
   clean_names()
 
 # makueni county (sequenced and non sequenced) data 
-makueni_sq <- read.csv("makueni_sequenced.csv") |>
+makueni_sq <- import(here::here("raw_data","makueni_sequenced.csv")) |>
   clean_names() |>
   dplyr::rename(sub_counties = sub_county,
                lab_diagnostics_pcr = lab_diagnostics )

@@ -5,8 +5,8 @@ library(Hmisc)
 # Calculate incidence
 cases <- 20 # number of cases detected in a given population over a given unit of time
 period <- 20/12 # amount of time during which surveillance was enhanced
-population <- 150000 # study population (humans)
-HDR <- 8 # estimated human dog ratio
+population <- (987653 + 993183) # study population (humans for Makueni and Siaya respectively)
+HDR <- (16+7) # estimated human dog ratio
 dogs <- population/ HDR
 
 inc_dogs <- (cases/period)/ dogs * 1000 # incidence per 1000 dogs per year
@@ -23,10 +23,14 @@ calc_inc <- function(cases, period, population, HDR){
 }
 
 # test function
-inc_est <- calc_inc(30, 15/12, 350000, 7)
-inc_est
+inc_est <- calc_inc(93, 12/12, 993183, 7) #siaya
+inc_est 
+
+inc_est1 <- calc_inc(102, 28/12, 987653, 16) #Makueni
+inc_est1
 
 # Can you adapt this to just calculate dog rabies cases per 100,000 persons??
+
 
 #############################################################################
 # Estimate number of tests required nationwide:
@@ -125,3 +129,5 @@ calc_testing(inc_dogs = inc_est[1] / 1000, population = 67000000, HDR = 25, # lo
 # what would you advocate in terms of RDT use?
 # What are the implications of sticking with a laboratory-only based approach vs field testing too?
 
+
+## BAR PLOTS
