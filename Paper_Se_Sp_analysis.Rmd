@@ -408,10 +408,10 @@ test <- ct_data |>
   filter(!lab_diagnostics_pcr %in% "") |>
    mutate(outcome_result =        ifelse(rapid_diagnostic_test==lab_diagnostics_pcr,"Yes","No")) |>
   mutate(test_result = case_when(
-    rapid_diagnostic_test == "Positive" & outcome_result == "Yes" ~ "True_Positive",
-    rapid_diagnostic_test == "Negative" & outcome_result == "Yes" ~ "True_Negative",
-    lab_diagnostics_pcr == "Positive" & outcome_result == "No" ~ "False_Negative",
-             TRUE ~ "False_Positive")) |>
+    rapid_diagnostic_test == "Positive" & outcome_result == "Yes" ~ "RDT+/sequential PCR+",
+    rapid_diagnostic_test == "Negative" & outcome_result == "Yes" ~ "RDT-/sequential PCR-",
+    lab_diagnostics_pcr == "Positive" & outcome_result == "No" ~ "RDT-/sequential PCR+",
+             TRUE ~ "RDT+/sequential PCR-")) |>
   mutate(lab_diagnostics_pcr_ = recode(lab_diagnostics_pcr, 
              "Positive" = "1",
              "Negative" = "0")) |>
@@ -442,23 +442,23 @@ for(i in unique(new_plan$clinical_signs_)){
 }
 
 for(k in 1:nrow(new_plan_zeros)){
-  if(new_plan_zeros$test_result[k] == "True_Positive"){
+  if(new_plan_zeros$test_result[k] == "RDT+/sequential PCR+"){
     new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/90)*100
 
   }
-  if(new_plan_zeros$test_result[k] == "False_Positive"){
+  if(new_plan_zeros$test_result[k] == "RDT+/sequential PCR-"){
     new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/6)*100
   }
-  if(new_plan_zeros$test_result[k] == "True_Negative"){
+  if(new_plan_zeros$test_result[k] == "RDT-/sequential PCR-"){
     new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/14)*100
   }
-  if(new_plan_zeros$test_result[k] == "False_Negative"){
+  if(new_plan_zeros$test_result[k] == "RDT-/sequential PCR+"){
     new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/2)*100
   }
 }
 
-new_plan_zeros$test_result <- factor(new_plan_zeros$test_result, levels = c("True_Positive", "False_Positive", "True_Negative",
-        "False_Negative" ))
+new_plan_zeros$test_result <- factor(new_plan_zeros$test_result, levels = c("RDT+/sequential PCR+", "RDT+/sequential PCR-", "RDT-/sequential PCR-",
+        "RDT-/sequential PCR+" ))
 
 new_plan_zeros$clinical_signs_ <- as.factor(new_plan_zeros$clinical_signs_)
 
@@ -471,7 +471,17 @@ ggplot(data =new_plan_zeros,aes(x=forcats::fct_infreq(clinical_signs_, cent), y 
   facet_grid(.~test_result, scales = "free_x")+
   theme_bw() +
   coord_flip() +
-  ylim(c(0,100))
+  ylim(c(0,100))+
+  theme(
+    axis.text.x  = element_text(size = 16),
+    axis.text.y  = element_text(size = 16),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    legend.text  = element_text(size = 16),
+    legend.title = element_text(size = 16, face = "bold"),
+    strip.text = element_text(size = 16, face = "bold"),
+    strip.background = element_rect(fill = "grey90")
+  )
   
 ggsave("Figs/Figure_5.png", width = 18, height = 12)
 #ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 5.png", width = 18, height = 12)
