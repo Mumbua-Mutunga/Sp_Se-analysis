@@ -213,6 +213,7 @@ siaya_samples <- samples_df %>%
   labs(title = "Siaya",
        x = "Month", y = "Tests", fill = "Outcome") +
     theme(text=element_text(size=11), legend.position="left" )
+
 siaya_samples
 
 ts_plot <- (siaya_samples | makueni_samples) + 
