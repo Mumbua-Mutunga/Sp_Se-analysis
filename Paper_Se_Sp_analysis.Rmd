@@ -42,6 +42,7 @@ pacman::p_load(
   caret,
   patchwork,
   Hmisc,
+  cowplot,
   tidyverse
 )
 
@@ -458,13 +459,13 @@ for(k in 1:nrow(new_plan_zeros)){
 
   }
   if(new_plan_zeros$test_result[k] == "RDT+/sequential PCR-"){
-    new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/6)*100
+    new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/2)*100
   }
   if(new_plan_zeros$test_result[k] == "RDT-/sequential PCR-"){
     new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/14)*100
   }
   if(new_plan_zeros$test_result[k] == "RDT-/sequential PCR+"){
-    new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/2)*100
+    new_plan_zeros$cent[k] = (new_plan_zeros$n[k]/6)*100
   }
 }
 
@@ -510,18 +511,18 @@ new_plan_zeros <- new_plan_zeros |>
   filter(n != 0)
 
 
-ggplot(new_plan_zeros, aes(x = n, 
-               y = clinical_signs_, 
-               fill = species)) +
+p <- ggplot(new_plan_zeros, aes(x = n, 
+                                y = clinical_signs_, 
+                                fill = species)) +
   geom_col(position = "dodge") +
-  scale_fill_manual(values =c("red", "#48A0B2" ,"#5E4FA2","#CCEA9D"))+
+  scale_fill_manual(values = c("red", "#48A0B2", "#5E4FA2", "#CCEA9D")) +
   facet_wrap(~ test_result, scales = "free_x") +
-  labs(x = "Species Number", 
+  labs(x = "Number of cases", 
        y = "Clinical signs",
        fill = "Species") +
   theme_bw(base_size = 14) +
   theme(
-    strip.text = element_text(size = 14, face = "bold"),
+    strip.text = element_text(size = 14),
     axis.text.x = element_text(size = 12),
     axis.text.y = element_text(size = 12),
     axis.title = element_text(size = 14, face = "bold"),
@@ -529,8 +530,20 @@ ggplot(new_plan_zeros, aes(x = n,
     legend.title = element_text(size = 13, face = "bold")
   )
 
+p
 
-ggsave("Figs/Figure_5.png", width = 18, height = 12)
+p_labeled <- ggdraw(p) +
+  draw_plot_label(
+    label = c("A", "B", "C", "D"),
+    x = c(0.20, 0.60, 0.20, 0.60),   # slightly inside panels
+    y = c(0.98, 0.98, 0.50, 0.50),   # slightly below top
+    hjust = 0, vjust = 1,
+    size = 16,
+    fontface = "bold"
+  )
+p_labeled
+
+ggsave("Figs/Figure_5.png",plot = p_labeled, width = 14, height = 10)
 #ggsave("/Users/mumbuamutunga/Library/CloudStorage/Dropbox/Desktop/Sp:Se_Analysis/Sp_Se-analysis/Figs/Figure 5.png", width = 18, height = 12)
 
 ```
